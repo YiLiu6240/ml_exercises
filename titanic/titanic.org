@@ -3,7 +3,7 @@
 * references
 - http://ahmedbesbes.com/how-to-score-08134-in-titanic-kaggle-challenge.html
 * preamble
-#+begin_src ipython :session :export both :results output
+#+begin_src ipython :session :exports both :results output
 import pandas as pd
 from matplotlib import pyplot as plt
 import matplotlib
@@ -17,14 +17,14 @@ pd.options.display.max_columns = 100
 #+RESULTS:
 * data cleansing
 read data from csv:
-#+begin_src ipython :session :export both :results output
+#+begin_src ipython :session :exports both :results output
 data = pd.read_csv('data/train.csv')
 #+end_src
 
 #+RESULTS:
 
 initial description:
-#+begin_src ipython :session :export both :results output
+#+begin_src ipython :session :exports both :results output
 print('data head:\n', data.head())
 print('data description\n', data.describe())
 #+end_src
@@ -75,7 +75,7 @@ max      6.000000  512.329200
 #+end_example
 
 replace missing values in features with median values:
-#+begin_src ipython :session :export both :results output
+#+begin_src ipython :session :exports both :results output
 data['Age'].fillna(data['Age'].median(), inplace=True)
 print('after processing missing data:\n', data.describe())
 #+end_src
