@@ -10,7 +10,7 @@ import matplotlib
 import numpy as np
 
 %matplotlib inline
-matplotlib.style.use('ggplot')
+matplotlib.style.use("ggplot")
 pd.options.display.max_columns = 100
 #+end_src
 
@@ -18,15 +18,15 @@ pd.options.display.max_columns = 100
 * data cleansing
 read data from csv:
 #+begin_src ipython :session :exports both :results output
-data = pd.read_csv('data/train.csv')
+data = pd.read_csv("data/train.csv")
 #+end_src
 
 #+RESULTS:
 
 initial description:
 #+begin_src ipython :session :exports both :results output
-print('data head:\n', data.head())
-print('data description\n', data.describe())
+print("data head:\n", data.head())
+print("data description\n", data.describe())
 #+end_src
 
 #+RESULTS:
@@ -76,8 +76,8 @@ max      6.000000  512.329200
 
 replace missing values in features with median values:
 #+begin_src ipython :session :exports both :results output
-data['Age'].fillna(data['Age'].median(), inplace=True)
-print('after processing missing data:\n', data.describe())
+data["Age"].fillna(data["Age"].median(), inplace=True)
+print("after processing missing data:\n", data.describe())
 #+end_src
 
 #+RESULTS:
