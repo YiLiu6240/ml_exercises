@@ -1,3 +1,8 @@
 #+title: Machine Learning execises
 
-random stuff
+* tips for using org-babel
+- ~C-c C-c~ to execute a code block
+- ~C-c '~ to open the code block in a dedicated major mode buffer
+  - ~C-c '~ to exit
+- org-babel commands are housed in ~C-c C-v~
+  - ~C-z~ to open associated process
