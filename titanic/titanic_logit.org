@@ -1,3 +1,577 @@
 * references
 - http://datascienceplus.com/perform-logistic-regression-in-r/
 - https://gist.github.com/raleighlinda/4708052
+
+* preamble
+#+begin_src R :session :exports both :results output code
+sapply(c("Hmisc", "tidyr", "dplyr", "magrittr"),
+       require, character.only=TRUE, quietly=TRUE)
+#+end_src
+
+#+RESULTS:
+#+BEGIN_SRC R
+
+Attaching package: 'lattice'
+
+The following object is masked _by_ '.GlobalEnv':
+
+    qq
+
+
+Attaching package: 'Hmisc'
+
+The following objects are masked from 'package:base':
+
+    format.pval, round.POSIXt, trunc.POSIXt, units
+
+
+Attaching package: 'dplyr'
+
+The following objects are masked from 'package:Hmisc':
+
+    combine, src, summarize
+
+The following objects are masked from 'package:stats':
+
+    filter, lag
+
+The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union
+
+
+Attaching package: 'magrittr'
+
+The following object is masked from 'package:tidyr':
+
+    extract
+
+   Hmisc    tidyr    dplyr magrittr
+    TRUE     TRUE     TRUE     TRUE
+#+END_SRC
+
+* data cleaning
+** Load data
+Note: do not load character variables as factor variables,
+convert them explicitly later.
+#+begin_src R :session :exports both :results output code
+train_raw = read.csv("data/train.csv", na.strings="", stringsAsFactors=FALSE)
+test_raw = read.csv("data/test.csv", na.strings="", stringsAsFactors=FALSE)
+train = train_raw
+test = test_raw
+#+end_src
+
+#+RESULTS:
+#+BEGIN_SRC R
+#+END_SRC
+
+** Description of raw data.
+
+Issues
+- for character features a value "" should be a missing value
+- ~Pclass~ denoting passenger class should be an ordered categorical variable
+- ~NA~ missing values in ~Age~ should be replaced with the sample median age
+- ~PassengerID~, ~Name~ are index variables, which should not be used as a feature
+#+begin_src R :session :exports both :results output code
+cat("# Data: train:\n")
+train_raw %>% head
+train_raw %>% str
+train_raw %>% summary
+train_raw %>% describe
+
+cat("# Data: test:\n")
+test_raw %>% head
+test_raw %>% str
+test_raw %>% summary
+test_raw %>% describe
+#+end_src
+
+#+RESULTS:
+#+BEGIN_SRC R
+# Data: train:
+  PassengerId Survived Pclass
+1           1        0      3
+2           2        1      1
+3           3        1      3
+4           4        1      1
+5           5        0      3
+6           6        0      3
+                                                 Name    Sex Age SibSp Parch
+1                             Braund, Mr. Owen Harris   male  22     1     0
+2 Cumings, Mrs. John Bradley (Florence Briggs Thayer) female  38     1     0
+3                              Heikkinen, Miss. Laina female  26     0     0
+4        Futrelle, Mrs. Jacques Heath (Lily May Peel) female  35     1     0
+5                            Allen, Mr. William Henry   male  35     0     0
+6                                    Moran, Mr. James   male  NA     0     0
+            Ticket   Fare Cabin Embarked
+1        A/5 21171  7.250  <NA>        S
+2         PC 17599 71.283   C85        C
+3 STON/O2. 3101282  7.925  <NA>        S
+4           113803 53.100  C123        S
+5           373450  8.050  <NA>        S
+6           330877  8.458  <NA>        Q
+'data.frame':	891 obs. of  12 variables:
+ $ PassengerId: int  1 2 3 4 5 6 7 8 9 10 ...
+ $ Survived   : int  0 1 1 1 0 0 0 0 1 1 ...
+ $ Pclass     : int  3 1 3 1 3 3 1 3 3 2 ...
+ $ Name       : chr  "Braund, Mr. Owen Harris" "Cumings, Mrs. John Bradley (Florence Briggs Thayer)" "Heikkinen, Miss. Laina" "Futrelle, Mrs. Jacques Heath (Lily May Peel)" ...
+ $ Sex        : chr  "male" "female" "female" "female" ...
+ $ Age        : num  22 38 26 35 35 NA 54 2 27 14 ...
+ $ SibSp      : int  1 1 0 1 0 0 0 3 0 1 ...
+ $ Parch      : int  0 0 0 0 0 0 0 1 2 0 ...
+ $ Ticket     : chr  "A/5 21171" "PC 17599" "STON/O2. 3101282" "113803" ...
+ $ Fare       : num  7.25 71.28 7.92 53.1 8.05 ...
+ $ Cabin      : chr  NA "C85" NA "C123" ...
+ $ Embarked   : chr  "S" "C" "S" "S" ...
+  PassengerId     Survived         Pclass         Name
+ Min.   :  1   Min.   :0.000   Min.   :1.00   Length:891
+ 1st Qu.:224   1st Qu.:0.000   1st Qu.:2.00   Class :character
+ Median :446   Median :0.000   Median :3.00   Mode  :character
+ Mean   :446   Mean   :0.384   Mean   :2.31
+ 3rd Qu.:668   3rd Qu.:1.000   3rd Qu.:3.00
+ Max.   :891   Max.   :1.000   Max.   :3.00
+
+     Sex                 Age            SibSp           Parch
+ Length:891         Min.   : 0.42   Min.   :0.000   Min.   :0.000
+ Class :character   1st Qu.:20.12   1st Qu.:0.000   1st Qu.:0.000
+ Mode  :character   Median :28.00   Median :0.000   Median :0.000
+                    Mean   :29.70   Mean   :0.523   Mean   :0.382
+                    3rd Qu.:38.00   3rd Qu.:1.000   3rd Qu.:0.000
+                    Max.   :80.00   Max.   :8.000   Max.   :6.000
+                    NA's   :177
+    Ticket               Fare          Cabin             Embarked
+ Length:891         Min.   :  0.0   Length:891         Length:891
+ Class :character   1st Qu.:  7.9   Class :character   Class :character
+ Mode  :character   Median : 14.5   Mode  :character   Mode  :character
+                    Mean   : 32.2
+                    3rd Qu.: 31.0
+                    Max.   :512.3
+
+
+ 12  Variables      891  Observations
+--------------------------------------------------------------------------------
+PassengerId
+      n missing  unique    Info    Mean     .05     .10     .25     .50     .75
+    891       0     891       1     446    45.5    90.0   223.5   446.0   668.5
+    .90     .95
+  802.0   846.5
+
+lowest :   1   2   3   4   5, highest: 887 888 889 890 891
+--------------------------------------------------------------------------------
+Survived
+      n missing  unique    Info     Sum    Mean
+    891       0       2    0.71     342  0.3838
+--------------------------------------------------------------------------------
+Pclass
+      n missing  unique    Info    Mean
+    891       0       3    0.81   2.309
+
+1 (216, 24%), 2 (184, 21%), 3 (491, 55%)
+--------------------------------------------------------------------------------
+Name
+      n missing  unique
+    891       0     891
+
+lowest : Abbing, Mr. Anthony                   Abbott, Mr. Rossmore Edward           Abbott, Mrs. Stanton (Rosa Hunt)      Abelson, Mr. Samuel                   Abelson, Mrs. Samuel (Hannah Wizosky)
+highest: de Mulder, Mr. Theodore               de Pelsmaeker, Mr. Alfons             del Carlo, Mr. Sebastiano             van Billiard, Mr. Austin Blyler       van Melkebeke, Mr. Philemon
+--------------------------------------------------------------------------------
+Sex
+      n missing  unique
+    891       0       2
+
+female (314, 35%), male (577, 65%)
+--------------------------------------------------------------------------------
+Age
+      n missing  unique    Info    Mean     .05     .10     .25     .50     .75
+    714     177      88       1    29.7    4.00   14.00   20.12   28.00   38.00
+    .90     .95
+  50.00   56.00
+
+lowest :  0.42  0.67  0.75  0.83  0.92, highest: 70.00 70.50 71.00 74.00 80.00
+--------------------------------------------------------------------------------
+SibSp
+      n missing  unique    Info    Mean
+    891       0       7    0.67   0.523
+
+            0   1  2  3  4 5 8
+Frequency 608 209 28 16 18 5 7
+%          68  23  3  2  2 1 1
+--------------------------------------------------------------------------------
+Parch
+      n missing  unique    Info    Mean
+    891       0       7    0.56  0.3816
+
+            0   1  2 3 4 5 6
+Frequency 678 118 80 5 4 5 1
+%          76  13  9 1 0 1 0
+--------------------------------------------------------------------------------
+Ticket
+      n missing  unique
+    891       0     681
+
+lowest : 110152      110413      110465      110564      110813
+highest: W./C. 6608  W./C. 6609  W.E.P. 5734 W/C 14208   WE/P 5735
+--------------------------------------------------------------------------------
+Fare
+      n missing  unique    Info    Mean     .05     .10     .25     .50     .75
+    891       0     248       1    32.2   7.225   7.550   7.910  14.454  31.000
+    .90     .95
+ 77.958 112.079
+
+lowest :   0.000   4.013   5.000   6.237   6.438
+highest: 227.525 247.521 262.375 263.000 512.329
+--------------------------------------------------------------------------------
+Cabin
+      n missing  unique
+    204     687     147
+
+lowest : A10 A14 A16 A19 A20, highest: F33 F38 F4  G6  T
+--------------------------------------------------------------------------------
+Embarked
+      n missing  unique
+    889       2       3
+
+C (168, 19%), Q (77, 9%), S (644, 72%)
+--------------------------------------------------------------------------------
+R> # Data: test:
+  PassengerId Pclass                                         Name    Sex  Age
+1         892      3                             Kelly, Mr. James   male 34.5
+2         893      3             Wilkes, Mrs. James (Ellen Needs) female 47.0
+3         894      2                    Myles, Mr. Thomas Francis   male 62.0
+4         895      3                             Wirz, Mr. Albert   male 27.0
+5         896      3 Hirvonen, Mrs. Alexander (Helga E Lindqvist) female 22.0
+6         897      3                   Svensson, Mr. Johan Cervin   male 14.0
+  SibSp Parch  Ticket   Fare Cabin Embarked
+1     0     0  330911  7.829  <NA>        Q
+2     1     0  363272  7.000  <NA>        S
+3     0     0  240276  9.688  <NA>        Q
+4     0     0  315154  8.662  <NA>        S
+5     1     1 3101298 12.287  <NA>        S
+6     0     0    7538  9.225  <NA>        S
+'data.frame':	418 obs. of  11 variables:
+ $ PassengerId: int  892 893 894 895 896 897 898 899 900 901 ...
+ $ Pclass     : int  3 3 2 3 3 3 3 2 3 3 ...
+ $ Name       : chr  "Kelly, Mr. James" "Wilkes, Mrs. James (Ellen Needs)" "Myles, Mr. Thomas Francis" "Wirz, Mr. Albert" ...
+ $ Sex        : chr  "male" "female" "male" "male" ...
+ $ Age        : num  34.5 47 62 27 22 14 30 26 18 21 ...
+ $ SibSp      : int  0 1 0 0 1 0 0 1 0 2 ...
+ $ Parch      : int  0 0 0 0 1 0 0 1 0 0 ...
+ $ Ticket     : chr  "330911" "363272" "240276" "315154" ...
+ $ Fare       : num  7.83 7 9.69 8.66 12.29 ...
+ $ Cabin      : chr  NA NA NA NA ...
+ $ Embarked   : chr  "Q" "S" "Q" "S" ...
+  PassengerId       Pclass         Name               Sex
+ Min.   : 892   Min.   :1.00   Length:418         Length:418
+ 1st Qu.: 996   1st Qu.:1.00   Class :character   Class :character
+ Median :1100   Median :3.00   Mode  :character   Mode  :character
+ Mean   :1100   Mean   :2.27
+ 3rd Qu.:1205   3rd Qu.:3.00
+ Max.   :1309   Max.   :3.00
+
+      Age            SibSp           Parch          Ticket
+ Min.   : 0.17   Min.   :0.000   Min.   :0.000   Length:418
+ 1st Qu.:21.00   1st Qu.:0.000   1st Qu.:0.000   Class :character
+ Median :27.00   Median :0.000   Median :0.000   Mode  :character
+ Mean   :30.27   Mean   :0.447   Mean   :0.392
+ 3rd Qu.:39.00   3rd Qu.:1.000   3rd Qu.:0.000
+ Max.   :76.00   Max.   :8.000   Max.   :9.000
+ NA's   :86
+      Fare          Cabin             Embarked
+ Min.   :  0.0   Length:418         Length:418
+ 1st Qu.:  7.9   Class :character   Class :character
+ Median : 14.5   Mode  :character   Mode  :character
+ Mean   : 35.6
+ 3rd Qu.: 31.5
+ Max.   :512.3
+ NA's   :1
+
+
+ 11  Variables      418  Observations
+--------------------------------------------------------------------------------
+PassengerId
+      n missing  unique    Info    Mean     .05     .10     .25     .50     .75
+    418       0     418       1    1100   912.9   933.7   996.2  1100.5  1204.8
+    .90     .95
+ 1267.3  1288.2
+
+lowest :  892  893  894  895  896, highest: 1305 1306 1307 1308 1309
+--------------------------------------------------------------------------------
+Pclass
+      n missing  unique    Info    Mean
+    418       0       3    0.83   2.266
+
+1 (107, 26%), 2 (93, 22%), 3 (218, 52%)
+--------------------------------------------------------------------------------
+Name
+      n missing  unique
+    418       0     418
+
+lowest : Abbott, Master. Eugene Joseph                 Abelseth, Miss. Karen Marie                   Abelseth, Mr. Olaus Jorgensen                 Abrahamsson, Mr. Abraham August Johannes      Abrahim, Mrs. Joseph (Sophie Halaut Easu)
+highest: de Brito, Mr. Jose Joaquim                    de Messemaeker, Mr. Guillaume Joseph          del Carlo, Mrs. Sebastiano (Argenia Genovesi) van Billiard, Master. James William           van Billiard, Master. Walter John
+--------------------------------------------------------------------------------
+Sex
+      n missing  unique
+    418       0       2
+
+female (152, 36%), male (266, 64%)
+--------------------------------------------------------------------------------
+Age
+      n missing  unique    Info    Mean     .05     .10     .25     .50     .75
+    332      86      79       1   30.27     8.0    16.1    21.0    27.0    39.0
+    .90     .95
+   50.0    57.0
+
+lowest :  0.17  0.33  0.75  0.83  0.92, highest: 62.00 63.00 64.00 67.00 76.00
+--------------------------------------------------------------------------------
+SibSp
+      n missing  unique    Info    Mean
+    418       0       7    0.67  0.4474
+
+            0   1  2 3 4 5 8
+Frequency 283 110 14 4 4 1 2
+%          68  26  3 1 1 0 0
+--------------------------------------------------------------------------------
+Parch
+      n missing  unique    Info    Mean
+    418       0       8    0.53  0.3923
+
+            0  1  2 3 4 5 6 9
+Frequency 324 52 33 3 2 1 1 2
+%          78 12  8 1 0 0 0 0
+--------------------------------------------------------------------------------
+Ticket
+      n missing  unique
+    418       0     363
+
+lowest : 110469      110489      110813      111163      112051
+highest: W./C. 14260 W./C. 14266 W./C. 6607  W./C. 6608  W.E.P. 5734
+--------------------------------------------------------------------------------
+Fare
+      n missing  unique    Info    Mean     .05     .10     .25     .50     .75
+    417       1     169       1   35.63   7.229   7.642   7.896  14.454  31.500
+    .90     .95
+ 79.200 151.550
+
+lowest :   0.000   3.171   6.438   6.496   6.950
+highest: 227.525 247.521 262.375 263.000 512.329
+--------------------------------------------------------------------------------
+Cabin
+      n missing  unique
+     91     327      76
+
+lowest : A11   A18   A21   A29   A34  , highest: F G63 F2    F33   F4    G6
+--------------------------------------------------------------------------------
+Embarked
+      n missing  unique
+    418       0       3
+
+C (102, 24%), Q (46, 11%), S (270, 65%)
+--------------------------------------------------------------------------------
+#+END_SRC
+
+** cleaning procedures
+Convert factors:
+- passenger class "Pclass" to ordered categorical factors
+- "Sex" to non-ordered factors
+- "Embarked" to non-ordered factors
+# ISSUE: how does converting factor from character affect results?
+# ISSUE: how does non-ordered factors vs. ordered factors affect results?
+#+begin_src R :session :exports both :results output code
+train = train %>%
+    mutate(Sex=factor(Sex),
+           Embarked=factor(Embarked),
+           Pclass=factor(Pclass, levels=c(3,2,1), ordered=TRUE))
+test = test %>%
+    mutate(Sex=factor(Sex),
+           Embarked=factor(Embarked),
+           Pclass=factor(Pclass, levels=c(3,2,1), ordered=TRUE))
+train %>% select(Sex, Embarked, Pclass) %>% str
+test %>% select(Sex, Embarked, Pclass) %>% str
+#+end_src
+
+#+RESULTS:
+#+BEGIN_SRC R
+ R> + + + R> 'data.frame':	891 obs. of  3 variables:
+ $ Sex     : Factor w/ 2 levels "female","male": 2 1 1 1 2 2 2 2 1 1 ...
+ $ Embarked: Factor w/ 3 levels "C","Q","S": 3 1 3 3 3 2 3 3 3 1 ...
+ $ Pclass  : Ord.factor w/ 3 levels "3"<"2"<"1": 1 3 1 3 1 1 3 1 1 2 ...
+'data.frame':	418 obs. of  3 variables:
+ $ Sex     : Factor w/ 2 levels "female","male": 2 1 2 2 1 2 1 2 1 2 ...
+ $ Embarked: Factor w/ 3 levels "C","Q","S": 2 3 2 3 3 3 2 3 1 3 ...
+ $ Pclass  : Ord.factor w/ 3 levels "3"<"2"<"1": 1 1 2 1 1 1 1 2 1 1 ...
+#+END_SRC
+
+Missing values: Age, replace with median
+#+begin_src R :session :exports both :results output code
+train = train %>%
+    mutate(Age=ifelse(is.na(Age), median(Age, na.rm=TRUE), Age))
+test = test %>%
+    mutate(Age=ifelse(is.na(Age), median(Age, na.rm=TRUE), Age))
+#+end_src
+
+#+RESULTS:
+#+BEGIN_SRC R
+#+END_SRC
+
+Missing values: Embarked, deselect
+#+begin_src R :session :exports both :results output code
+train = train %>%
+    filter(!is.na(Embarked), !is.na(Fare))
+test = test %>%
+    filter(!is.na(Embarked), !is.na(Fare))
+#+end_src
+
+#+RESULTS:
+#+BEGIN_SRC R
+#+END_SRC
+
+** describe cleaned data
+#+begin_src R :session :exports both :results output code
+train %>% sapply(function(x) sum(is.na(x)))
+test %>% sapply(function(x) sum(is.na(x)))
+#+end_src
+
+#+RESULTS:
+#+BEGIN_SRC R
+PassengerId    Survived      Pclass        Name         Sex         Age
+          0           0           0           0           0           0
+      SibSp       Parch      Ticket        Fare       Cabin    Embarked
+          0           0           0           0         687           0
+PassengerId      Pclass        Name         Sex         Age       SibSp
+          0           0           0           0           0           0
+      Parch      Ticket        Fare       Cabin    Embarked
+          0           0           0         326           0
+#+END_SRC
+
+
+* logit model
+Response:
+- Survived
+Features to consider:
+- Pclass
+- Sex
+- Age
+- SibSp
+- Parch
+- Fare
+- Embarked
+#+begin_src R :session :exports both :results output code
+formula = "Survived ~ %s" %>%
+    sprintf(paste(c("Pclass", "Sex", "Age", "SibSp",
+                    "Parch", "Fare", "Embarked"),
+           collapse = " + ")) %>%
+    as.formula
+model = glm(formula=formula, family=binomial(link="logit"), data=train)
+#+end_src
+
+#+RESULTS:
+#+BEGIN_SRC R
+#+END_SRC
+
+Model Summary
+#+begin_src R :session :exports both :results output code
+summary(model)
+#+end_src
+
+#+RESULTS:
+#+BEGIN_SRC R
+
+Call:
+glm(formula = formula, family = binomial(link = "logit"), data = train)
+
+Deviance Residuals:
+   Min      1Q  Median      3Q     Max
+-2.617  -0.609  -0.419   0.613   2.453
+
+Coefficients:
+            Estimate Std. Error z value Pr(>|z|)
+(Intercept)  3.04382    0.37976    8.02  1.1e-15
+Pclass.L     1.51611    0.21048    7.20  5.9e-13
+Pclass.Q    -0.13076    0.18236   -0.72   0.4734
+Sexmale     -2.71031    0.20122  -13.47  < 2e-16
+Age         -0.03875    0.00787   -4.92  8.6e-07
+SibSp       -0.32050    0.10906   -2.94   0.0033
+Parch       -0.09131    0.11885   -0.77   0.4423
+Fare         0.00230    0.00246    0.94   0.3494
+EmbarkedQ   -0.05773    0.38106   -0.15   0.8796
+EmbarkedS   -0.44014    0.23953   -1.84   0.0661
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 1182.82  on 888  degrees of freedom
+Residual deviance:  784.42  on 879  degrees of freedom
+AIC: 804.4
+
+Number of Fisher Scoring iterations: 5
+#+END_SRC
+
+ANOVA
+
+A large p-value here indicates that the model without the variable explains
+more or less the same amount of variation.
+#+begin_src R :session :exports both :results output code
+anova(model, test="Chisq")
+#+end_src
+
+#+RESULTS:
+#+BEGIN_SRC R
+Analysis of Deviance Table
+
+Model: binomial, link: logit
+
+Response: Survived
+
+Terms added sequentially (first to last)
+
+
+         Df Deviance Resid. Df Resid. Dev Pr(>Chi)
+NULL                       888       1183
+Pclass    2    101.6       886       1081  < 2e-16
+Sex       1    254.7       885        827  < 2e-16
+Age       1     21.6       884        805  3.4e-06
+SibSp     1     14.2       883        791  0.00016
+Parch     1      0.4       882        790  0.50983
+Fare      1      1.7       881        789  0.19663
+Embarked  2      4.2       879        784  0.12499
+#+END_SRC
+
+
+* prediction
+Training Predictions:
+#+begin_src R :session :exports both :results output code
+training_predictions = predict(model, type="response")
+training_error = (sum((training_predictions >= 0.5)
+                      != (train$Survived == 1))
+                  /nrow(train))
+training_predictions %>% str
+cat(sprintf("training_error: %2.2f\n", training_error))
+#+end_src
+
+#+RESULTS:
+#+BEGIN_SRC R
+ R>  Named num [1:889] 0.0841 0.9194 0.6199 0.8877 0.0711 ...
+ - attr(*, "names")= chr [1:889] "1" "2" "3" "4" ...
+training_error: 0.19
+#+END_SRC
+
+Test Predictions in \( [0, 1] \):
+#+begin_src R :session :exports both :results output code
+test_predictions = predict(model, newdata=test, type="response")
+test_predictions %>% str
+
+test_predictions = ifelse(test_predictions > 0.5, 1L, 0L)
+test_predictions %>% str
+
+test_error = (sum(test_predictions != 1L)
+              / length(test_predictions))
+cat(sprintf("test_error: %2.2f\n", test_error))
+#+end_src
+
+#+RESULTS:
+#+BEGIN_SRC R
+ Named num [1:417] 0.1026 0.3436 0.1194 0.0946 0.5603 ...
+ - attr(*, "names")= chr [1:417] "1" "2" "3" "4" ...
+R> R>  Named int [1:417] 0 0 0 0 1 0 1 0 1 0 ...
+ - attr(*, "names")= chr [1:417] "1" "2" "3" "4" ...
+R> + R> test_error: 0.63
+#+END_SRC
