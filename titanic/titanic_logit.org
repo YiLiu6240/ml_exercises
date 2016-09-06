@@ -1,0 +1,3 @@
+* references
+- http://datascienceplus.com/perform-logistic-regression-in-r/
+- https://gist.github.com/raleighlinda/4708052
