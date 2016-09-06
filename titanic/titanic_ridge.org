@@ -1,2 +1,3 @@
 * reference
 - https://www.kaggle.com/bisaria/titanic/titanic-lasso-ridge-implementation/code
+- https://www.kaggle.com/hueykwik/titanic/elastic-net-implementation
