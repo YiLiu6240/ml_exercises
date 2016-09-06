@@ -1,6 +1,7 @@
 * references
 - http://datascienceplus.com/perform-logistic-regression-in-r/
 - https://gist.github.com/raleighlinda/4708052
+- http://rstudio-pubs-static.s3.amazonaws.com/16118_cb674d1430404916891d2bbb0cd40882.html
 
 * preamble
 #+begin_src R :session :exports both :results output code
@@ -401,7 +402,7 @@ test %>% select(Sex, Embarked, Pclass) %>% str
  $ Pclass  : Ord.factor w/ 3 levels "3"<"2"<"1": 1 1 2 1 1 1 1 2 1 1 ...
 #+END_SRC
 
-Missing values: Age, replace with median
+Missing values: ~Age~, replace with median
 #+begin_src R :session :exports both :results output code
 train = train %>%
     mutate(Age=ifelse(is.na(Age), median(Age, na.rm=TRUE), Age))
@@ -413,7 +414,7 @@ test = test %>%
 #+BEGIN_SRC R
 #+END_SRC
 
-Missing values: Embarked, deselect
+Missing values: deselect missing values
 #+begin_src R :session :exports both :results output code
 train = train %>%
     filter(!is.na(Embarked), !is.na(Fare))
@@ -539,39 +540,18 @@ Embarked  2      4.2       879        784  0.12499
 * prediction
 Training Predictions:
 #+begin_src R :session :exports both :results output code
-training_predictions = predict(model, type="response")
-training_error = (sum((training_predictions >= 0.5)
-                      != (train$Survived == 1))
-                  /nrow(train))
-training_predictions %>% str
-cat(sprintf("training_error: %2.2f\n", training_error))
+train_pred = predict(model, type="response")
+test_pred = predict(model, newdata=test, type="response")
+train_pred = ifelse(train_pred > 0.5, 1L, 0L)
+test_pred = ifelse(test_pred > 0.5, 1L, 0L)
+
+train_score = sum(train_pred == train$Survived)/length(train_pred)
+cat(sprintf("training score: %s\n", train_score))
 #+end_src
 
 #+RESULTS:
 #+BEGIN_SRC R
- R>  Named num [1:889] 0.0841 0.9194 0.6199 0.8877 0.0711 ...
- - attr(*, "names")= chr [1:889] "1" "2" "3" "4" ...
-training_error: 0.19
+R> R> R> R> R> training score: 0.805399325084364
 #+END_SRC
 
-Test Predictions in \( [0, 1] \):
-#+begin_src R :session :exports both :results output code
-test_predictions = predict(model, newdata=test, type="response")
-test_predictions %>% str
-
-test_predictions = ifelse(test_predictions > 0.5, 1L, 0L)
-test_predictions %>% str
-
-test_error = (sum(test_predictions != 1L)
-              / length(test_predictions))
-cat(sprintf("test_error: %2.2f\n", test_error))
-#+end_src
-
-#+RESULTS:
-#+BEGIN_SRC R
- Named num [1:417] 0.1026 0.3436 0.1194 0.0946 0.5603 ...
- - attr(*, "names")= chr [1:417] "1" "2" "3" "4" ...
-R> R>  Named int [1:417] 0 0 0 0 1 0 1 0 1 0 ...
- - attr(*, "names")= chr [1:417] "1" "2" "3" "4" ...
-R> + R> test_error: 0.63
-#+END_SRC
+# TODO: cross validation
