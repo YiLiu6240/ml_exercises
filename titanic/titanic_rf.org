@@ -15,7 +15,7 @@ pd.options.display.max_columns = 100
 #+end_src
 
 #+RESULTS:
-* data cleansing
+* data cleaning
 read data from csv:
 #+begin_src ipython :session :exports both :results output
 data = pd.read_csv("data/train.csv")
