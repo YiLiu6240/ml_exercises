@@ -1,7 +1,5 @@
 #+title: ML exercises using Titanic data
 
-* references
-- http://ahmedbesbes.com/how-to-score-08134-in-titanic-kaggle-challenge.html
 * preamble
 #+begin_src ipython :session :exports both :results output
 import pandas as pd
@@ -103,3 +101,6 @@ min      0.000000    0.000000
 75%      0.000000   31.000000
 max      6.000000  512.329200
 #+end_example
+
+* references
+- http://ahmedbesbes.com/how-to-score-08134-in-titanic-kaggle-challenge.html
