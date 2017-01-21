@@ -1,8 +1,3 @@
-* references
-- http://datascienceplus.com/perform-logistic-regression-in-r/
-- https://gist.github.com/raleighlinda/4708052
-- http://rstudio-pubs-static.s3.amazonaws.com/16118_cb674d1430404916891d2bbb0cd40882.html
-
 * preamble
 #+begin_src R :session :exports both :results output code
 sapply(c("Hmisc", "tidyr", "dplyr", "magrittr"),
@@ -555,3 +550,8 @@ R> R> R> R> R> training score: 0.805399325084364
 #+END_SRC
 
 # TODO: cross validation
+
+* references
+- http://datascienceplus.com/perform-logistic-regression-in-r/
+- https://gist.github.com/raleighlinda/4708052
+- http://rstudio-pubs-static.s3.amazonaws.com/16118_cb674d1430404916891d2bbb0cd40882.html
