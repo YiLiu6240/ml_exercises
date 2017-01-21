@@ -1,5 +1,7 @@
 #+title: Machine Learning execises
 
+My exercise projects for machine learning, also for using orgmode as literate programming examples.
+
 * tips for using org-babel
 - ~C-c C-c~ to execute a code block
 - ~C-c '~ to open the code block in a dedicated major mode buffer
