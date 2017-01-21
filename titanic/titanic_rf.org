@@ -1,7 +1,7 @@
 #+title: ML exercises using Titanic data
 
 * preamble
-#+begin_src ipython :session :exports both :results output
+#+begin_src ipython :session :exports code :results output
 import pandas as pd
 from matplotlib import pyplot as plt
 import matplotlib
@@ -15,7 +15,7 @@ pd.options.display.max_columns = 100
 #+RESULTS:
 * data cleaning
 read data from csv:
-#+begin_src ipython :session :exports both :results output
+#+begin_src ipython :session :exports code :results output
 data = pd.read_csv("data/train.csv")
 #+end_src
 
