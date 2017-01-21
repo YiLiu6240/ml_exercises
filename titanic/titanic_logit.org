@@ -1,49 +1,22 @@
 * preamble
 #+begin_src R :session :exports both :results output code
-sapply(c("Hmisc", "tidyr", "dplyr", "magrittr"),
+sapply(c("Hmisc", "tidyverse", "magrittr"),
        require, character.only=TRUE, quietly=TRUE)
 #+end_src
 
 #+RESULTS:
 #+BEGIN_SRC R
-
-Attaching package: 'lattice'
-
-The following object is masked _by_ '.GlobalEnv':
-
-    qq
-
-
-Attaching package: 'Hmisc'
-
-The following objects are masked from 'package:base':
-
-    format.pval, round.POSIXt, trunc.POSIXt, units
-
-
-Attaching package: 'dplyr'
-
-The following objects are masked from 'package:Hmisc':
-
-    combine, src, summarize
-
-The following objects are masked from 'package:stats':
-
-    filter, lag
-
-The following objects are masked from 'package:base':
-
-    intersect, setdiff, setequal, union
-
-
-Attaching package: 'magrittr'
-
-The following object is masked from 'package:tidyr':
-
-    extract
-
-   Hmisc    tidyr    dplyr magrittr
-    TRUE     TRUE     TRUE     TRUE
+Loading tidyverse: tibble
+Loading tidyverse: readr
+Loading tidyverse: purrr
+Conflicts with tidy packages ---------------------------------------------------
+combine():   dplyr, Hmisc
+filter():    dplyr, stats
+lag():       dplyr, stats
+src():       dplyr, Hmisc
+summarize(): dplyr, Hmisc
+    Hmisc tidyverse  magrittr
+     TRUE      TRUE      TRUE
 #+END_SRC
 
 * data cleaning
